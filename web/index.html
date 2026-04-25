@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MedLedger</title>
+  <link rel="stylesheet" href="/web/style.css" />
+</head>
+<body>
+  <header>
+    <h1>MedLedger</h1>
+    <div class="session" id="session">
+      <span id="session-label">not signed in</span>
+      <button id="logout" class="ghost" hidden>sign out</button>
+    </div>
+  </header>
+
+  <main>
+
+    <section id="login" class="panel">
+      <h2>sign in</h2>
+      <form id="login-form">
+        <label>username
+          <input type="text" id="login-user" autocomplete="username" required />
+        </label>
+        <label>password
+          <input type="password" id="login-pass" autocomplete="current-password" required />
+        </label>
+        <p class="muted">demo passwords are <code>pw_&lt;username&gt;</code> (e.g. <code>pw_doctor_01</code>).</p>
+        <button type="submit">sign in</button>
+        <p class="error" id="login-error"></p>
+      </form>
+    </section>
+
+    <section id="doctor" class="panel" hidden>
+      <h2>generate audit event <span class="role-pill">doctor / admin</span></h2>
+      <form id="access-form">
+        <label>patient
+          <select id="access-patient"></select>
+        </label>
+        <label>action
+          <select id="access-action">
+            <option>create</option><option>delete</option><option>change</option>
+            <option>query</option><option>print</option><option>copy</option>
+          </select>
+        </label>
+        <button type="submit">commit access event</button>
+      </form>
+      <pre class="result" id="access-result"></pre>
+    </section>
+
+    <section id="patient" class="panel" hidden>
+      <h2>my audit log <span class="role-pill">patient</span></h2>
+      <button id="patient-refresh">refresh</button>
+      <div id="patient-records" class="records"></div>
+    </section>
+
+    <section id="audit" class="panel" hidden>
+      <h2>all audit records <span class="role-pill">audit / admin</span></h2>
+      <button id="audit-refresh">refresh</button>
+      <div id="audit-records" class="records"></div>
+    </section>
+
+    <section id="verify" class="panel" hidden>
+      <h2>system verification</h2>
+      <p class="muted">runs local replay on each node and a cross-node block-hash comparison.</p>
+      <button id="verify-run">run verify</button>
+      <div id="verify-result" class="verify-result"></div>
+    </section>
+
+    <section id="storage" class="panel" hidden>
+      <h2>encrypted storage view <span class="role-pill">admin</span></h2>
+      <p class="muted">the ciphertext, nonce, and aad are base64. no plaintext patient_id, user_id, action, or event-time appears here.</p>
+      <button id="storage-refresh">load companyA chain</button>
+      <pre class="result" id="storage-result"></pre>
+    </section>
+
+  </main>
+
+  <footer>
+    <small>coursework prototype &middot; CSCI-531 &middot; not for redistribution</small>
+  </footer>
+
+  <script src="/web/app.js"></script>
+</body>
+</html>
