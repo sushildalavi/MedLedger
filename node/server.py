@@ -133,6 +133,15 @@ def build_app(node_id: str) -> Flask:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--node-id", required=True)
+    parser.add_argument(
+        "--host",
+        help="Bind interface (defaults to nodes[<id>].bind_host from config). Use 0.0.0.0 to expose on the LAN.",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        help="Bind port (defaults to the port in nodes[<id>].url from config).",
+    )
     args = parser.parse_args()
 
     config = load_config()
@@ -140,11 +149,19 @@ def main() -> None:
         print(f"unknown node id: {args.node_id}", file=sys.stderr)
         sys.exit(1)
 
-    url = config["nodes"][args.node_id]["url"]
-    port = int(url.rsplit(":", 1)[-1])
+    node_cfg = config["nodes"][args.node_id]
+    host = args.host or node_cfg.get("bind_host", "127.0.0.1")
+    port = args.port or int(node_cfg["url"].rsplit(":", 1)[-1])
+
+    cert_path = node_cfg.get("tls_cert_path")
+    key_path = node_cfg.get("tls_key_path")
+    if not cert_path or not key_path:
+        print(f"node {args.node_id} missing TLS material in config; re-run seed.py", file=sys.stderr)
+        sys.exit(1)
+    ssl_context = (str(ROOT / cert_path), str(ROOT / key_path))
 
     app = build_app(args.node_id)
-    app.run(host="127.0.0.1", port=port, debug=False, use_reloader=False)
+    app.run(host=host, port=port, debug=False, use_reloader=False, ssl_context=ssl_context)
 
 
 if __name__ == "__main__":
