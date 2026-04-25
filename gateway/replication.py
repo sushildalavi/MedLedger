@@ -30,11 +30,19 @@ class ReplicationError(Exception):
 
 
 class Replicator:
-    def __init__(self, nodes_cfg: dict, master_secret: bytes, index_secret: bytes, mode: str = "strict"):
+    def __init__(
+        self,
+        nodes_cfg: dict,
+        master_secret: bytes,
+        index_secret: bytes,
+        mode: str = "strict",
+        node_ca_bundle: str | None = None,
+    ):
         self.nodes_cfg = nodes_cfg
         self.master_secret = master_secret
         self.index_secret = index_secret
         self.mode = mode
+        self.node_ca_bundle = node_ca_bundle  # CA bundle of pinned node certs
 
     def _required_acks(self) -> int:
         return 3 if self.mode == "strict" else 2
@@ -43,18 +51,21 @@ class Replicator:
         secret = bytes.fromhex(self.nodes_cfg[node_id]["shared_secret_hex"])
         return {"X-Gateway-Auth": hmac_sha256(secret, body).hex()}
 
+    def _verify(self) -> str | bool:
+        return self.node_ca_bundle if self.node_ca_bundle else True
+
     def fetch_chain(self, node_id: str, patient_id_hash: str | None = None) -> list[dict]:
         url = f"{self.nodes_cfg[node_id]['url']}/node/chain"
         headers = self._gateway_auth_header(node_id, b"")
         params = {"patient_id_hash": patient_id_hash} if patient_id_hash else None
-        resp = requests.get(url, headers=headers, params=params, timeout=5)
+        resp = requests.get(url, headers=headers, params=params, timeout=5, verify=self._verify())
         resp.raise_for_status()
         return resp.json()["blocks"]
 
     def fetch_local_verify(self, node_id: str) -> dict:
         url = f"{self.nodes_cfg[node_id]['url']}/node/verify"
         headers = self._gateway_auth_header(node_id, b"")
-        resp = requests.get(url, headers=headers, timeout=5)
+        resp = requests.get(url, headers=headers, timeout=5, verify=self._verify())
         resp.raise_for_status()
         return resp.json()
 
@@ -113,6 +124,7 @@ class Replicator:
                         "Content-Type": "application/json",
                     },
                     timeout=5,
+                    verify=self._verify(),
                 )
                 if resp.status_code == 200:
                     acks.append({"node_id": node_id, "response": resp.json()})
