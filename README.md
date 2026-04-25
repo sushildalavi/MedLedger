@@ -1,8 +1,6 @@
 # MedLedger
 
-Secure decentralized audit logging for EHR access. Coursework for CSCI-531 Spring 2026. Not licensed for redistribution.
-
-Option 2 — Extended Prototype. Working alone.
+Secure decentralized audit logging for EHR access.
 
 ## What this is
 
