@@ -177,10 +177,4 @@ form button { justify-self: start; margin-top: 4px; }
   font-size: 12px;
 }
 
-footer {
-  text-align: center;
-  padding: 24px;
-  color: var(--muted);
-}
-
 code { font-family: var(--mono); background: #0a0c10; padding: 1px 5px; border-radius: 3px; }
