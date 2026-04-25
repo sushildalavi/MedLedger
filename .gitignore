@@ -17,3 +17,5 @@ certs/*.key
 certs/*.crt
 .DS_Store
 logs/
+.claude/
+.venv/
