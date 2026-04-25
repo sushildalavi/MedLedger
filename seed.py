@@ -14,10 +14,12 @@ from medcrypto.canonical import canonical_json
 from medcrypto.hashes import hmac_sha256_hex, sha256_hex
 from medcrypto.passwords import hash_password
 from medcrypto.signatures import generate_keypair
+from medcrypto.tls import generate_self_signed
 
 ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data"
 KEYS = ROOT / "keys"
+CERTS = ROOT / "certs"
 CONFIG = ROOT / "config.json"
 
 NODES = ["companyA", "companyB", "companyC"]
@@ -93,21 +95,59 @@ def reset_chains(index_secret_hex: str) -> None:
             f.write(json.dumps(build_genesis(node_id, index_secret_hex)) + "\n")
 
 
+def build_tls() -> dict:
+    CERTS.mkdir(exist_ok=True)
+    out: dict = {"node": {}, "gateway": {}}
+
+    # gateway cert
+    gw_cert = CERTS / "gateway.crt"
+    gw_key = CERTS / "gateway.key"
+    generate_self_signed("medledger-gateway", "127.0.0.1", gw_cert, gw_key)
+    os.chmod(gw_key, 0o600)
+    out["gateway"] = {
+        "cert_path": str(gw_cert.relative_to(ROOT)),
+        "key_path": str(gw_key.relative_to(ROOT)),
+    }
+
+    # per-node certs
+    bundle_chunks: list[bytes] = []
+    for node_id in NODES:
+        cert_path = CERTS / f"{node_id}.crt"
+        key_path = CERTS / f"{node_id}.key"
+        generate_self_signed(f"medledger-{node_id}", "127.0.0.1", cert_path, key_path)
+        os.chmod(key_path, 0o600)
+        bundle_chunks.append(cert_path.read_bytes())
+        out["node"][node_id] = {
+            "cert_path": str(cert_path.relative_to(ROOT)),
+            "key_path": str(key_path.relative_to(ROOT)),
+        }
+
+    # CA bundle the gateway uses to verify any of the 3 nodes
+    bundle = CERTS / "node_bundle.pem"
+    bundle.write_bytes(b"".join(bundle_chunks))
+    out["node_bundle_path"] = str(bundle.relative_to(ROOT))
+    return out
+
+
 def main() -> None:
     DATA.mkdir(exist_ok=True)
     users = build_users()
     node_keys = build_node_keys()
+    tls = build_tls()
 
     config = {
         "users": users,
         "nodes": {
             node_id: {
-                "url": f"http://127.0.0.1:{8001 + i}",
+                "url": f"https://127.0.0.1:{8001 + i}",
                 "shared_secret_hex": secrets.token_hex(32),
                 "private_key_path": node_keys[node_id]["private_key_path"],
                 "public_key_path": node_keys[node_id]["public_key_path"],
                 "public_key_pem": node_keys[node_id]["public_key_pem"],
                 "data_path": str((DATA / node_id / "chain.jsonl").relative_to(ROOT)),
+                "tls_cert_path": tls["node"][node_id]["cert_path"],
+                "tls_key_path": tls["node"][node_id]["key_path"],
+                "bind_host": "127.0.0.1",
             }
             for i, node_id in enumerate(NODES)
         },
@@ -122,6 +162,11 @@ def main() -> None:
         "gateway": {
             "host": "127.0.0.1",
             "port": 9000,
+            "tls_cert_path": tls["gateway"]["cert_path"],
+            "tls_key_path": tls["gateway"]["key_path"],
+        },
+        "tls": {
+            "node_bundle_path": tls["node_bundle_path"],
         },
     }
     CONFIG.write_text(json.dumps(config, indent=2))
@@ -132,6 +177,8 @@ def main() -> None:
     print(f"Wrote {CONFIG.relative_to(ROOT)}")
     print(f"Seeded {len(users)} users")
     print(f"Generated Ed25519 keypairs for {', '.join(NODES)}")
+    print(f"Generated TLS cert/key for gateway + each node")
+    print(f"Wrote node CA bundle: {tls['node_bundle_path']}")
     print(f"Wrote genesis block to {len(NODES)} chains")
 
 
