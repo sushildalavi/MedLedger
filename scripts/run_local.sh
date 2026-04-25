@@ -45,11 +45,11 @@ sleep 1
 start_gateway
 
 echo ""
-echo "all services running:"
-echo "  gateway    http://127.0.0.1:9000"
-echo "  companyA   http://127.0.0.1:8001"
-echo "  companyB   http://127.0.0.1:8002"
-echo "  companyC   http://127.0.0.1:8003"
+echo "all services running (TLS, self-signed):"
+echo "  gateway + web ui   https://127.0.0.1:9000  (open in browser)"
+echo "  companyA           https://127.0.0.1:8001"
+echo "  companyB           https://127.0.0.1:8002"
+echo "  companyC           https://127.0.0.1:8003"
 echo ""
 echo "ctrl+c to stop. logs in ./logs/"
 
