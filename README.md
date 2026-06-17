@@ -20,7 +20,6 @@ scripts/      run_local.sh, demo.sh, reset.sh, tamper_demo.sh
 data/         per-node chain.jsonl files (gitignored)
 keys/         per-node Ed25519 keypairs (gitignored)
 certs/        TLS cert/key per service + node_bundle.pem (gitignored)
-report/       written report + screenshots
 ```
 
 ## Setup (single machine)
