@@ -1,7 +1,5 @@
 # MedLedger
 
-Secure decentralized audit logging for EHR access.
-
 ## What this is
 
 A prototype audit-logging system for electronic health records that satisfies five goals: privacy, identification & authorization, queries, immutability, decentralization. Audit records are encrypted, hash-chained across three independent audit-company nodes, and signed per node. A single tampered node is detected by cross-node majority comparison.
